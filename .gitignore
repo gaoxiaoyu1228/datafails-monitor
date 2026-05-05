@@ -1,0 +1,9 @@
+# Claude local settings
+.claude/
+
+# 敏感文件（含 Token）
+intercomassesstoken.md
+
+# Python
+__pycache__/
+*.pyc

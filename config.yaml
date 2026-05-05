@@ -1,0 +1,11 @@
+intercom:
+  access_token: ""   # 通过环境变量 INTERCOM_ACCESS_TOKEN 传入
+
+monitor:
+  tag_id: "11659240"          # DataFail 标签
+  window_minutes: 60          # 统计近 N 分钟的会话数
+  threshold: 1                # 触发告警的阈值（测试中）
+  cooldown_minutes: 5         # 冷却期，防止重复告警
+
+webhook:
+  url: ""             # 通过环境变量 FEISHU_WEBHOOK_URL 传入
