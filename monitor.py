@@ -145,8 +145,8 @@ def send_alert(webhook_url, tag_id, count, threshold, window_minutes, is_mock=Fa
                             "tag": "button",
                             "text": {"tag": "plain_text", "content": "打开 Intercom 后台"},
                             "type": "default",
-                            "url": "https://app.intercom.com/a/apps/_/conversations",
-                            "multi_url": {"pc_url": "https://app.intercom.com/a/apps/_/conversations"},
+                            "url": "https://app.intercom.com/a/apps/bor1fk18/reports/custom-reports/report/16719521",
+                            "multi_url": {"pc_url": "https://app.intercom.com/a/apps/bor1fk18/reports/custom-reports/report/16719521"},
                         }
                     ],
                 },
