@@ -236,13 +236,3 @@ python3 monitor.py
 ```
 
 本地运行时，需先在 `config.yaml` 中填入真实的 `access_token` 和 `webhook.url`，或通过环境变量传入。
-
----
-
-## 备选方案
-
-如果 GitHub Actions 的 5 分钟最小间隔不满足需求：
-
-1. **阿里云函数计算**（FC）：支持更短间隔，有免费额度
-2. **本地 cron/launchd**：2 分钟间隔，但依赖本机开机
-3. **Vercel Cron Jobs**：免费版支持 1 分钟间隔（需 Node.js 改造）
