@@ -7,3 +7,14 @@ intercomassesstoken.md
 # Python
 __pycache__/
 *.pyc
+
+# 非本项目文件（Vercel / Next.js 等）
+.next/
+.vercel/
+.env.local
+.env
+app/
+vercel.json
+next.config.ts
+package.json
+tsconfig.json
