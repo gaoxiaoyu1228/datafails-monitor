@@ -2,8 +2,8 @@ name: DataFail Monitor
 
 on:
   schedule:
-    # 每 5 分钟执行一次（GitHub Actions 最小间隔）
-    - cron: "*/5 * * * *"
+    # 每 5 分钟执行一次
+    - cron: "0,5,10,15,20,25,30,35,40,45,50,55 * * * *"
   workflow_dispatch:
     inputs:
       mode:
