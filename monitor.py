@@ -100,7 +100,8 @@ def query_intercom(access_token, tag_id, window_start):
     return total
 
 
-def send_alert(webhook_url, tag_id, count, threshold, window_minutes, is_mock=False):
+def send_alert(webhook_url, tag_id, count, threshold, window_minutes,
+               consecutive=0, max_consecutive=0, is_mock=False):
     now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
     if is_mock:
@@ -125,6 +126,11 @@ def send_alert(webhook_url, tag_id, count, threshold, window_minutes, is_mock=Fa
             f"**告警阈值：**{threshold} 条",
             f"**触发时间：**{now_str}",
         ]
+        if max_consecutive > 0:
+            body_lines.append("")
+            body_lines.append(f"⏱️ 连续告警：**第 {consecutive}/{max_consecutive} 次**")
+        if consecutive >= max_consecutive and max_consecutive > 0:
+            body_lines.append("🛑 已触发连续告警上限，系统将进入 **45 分钟冷却期**，期间暂停推送。")
 
     card = {
         "msg_type": "interactive",
@@ -201,12 +207,18 @@ def cmd_mock(cfg):
 
 
 def cmd_run(cfg):
-    """Full monitoring run: query, check threshold, send alert if needed."""
+    """Full monitoring run: query, check threshold, manage consecutive alert cooldown."""
     state = load_state()
     now = int(time.time())
     window_start = now - cfg["monitor"]["window_minutes"] * 60
     threshold = cfg["monitor"]["threshold"]
     tag_id = cfg["monitor"]["tag_id"]
+    max_consecutive = cfg["monitor"].get("max_consecutive_alerts", 3)
+    extended_cooldown_sec = cfg["monitor"].get("extended_cooldown_minutes", 45) * 60
+
+    # init state fields if not present (backward compat with old state.json)
+    state.setdefault("consecutive_alerts", 0)
+    state.setdefault("cooldown_until", 0)
 
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 查询中...")
 
@@ -219,25 +231,46 @@ def cmd_run(cfg):
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
           f"tag={tag_id} 近{cfg['monitor']['window_minutes']}分钟={count}条 阈值={threshold}")
 
+    # check extended cooldown
+    cooldown_until = state["cooldown_until"]
+    if cooldown_until > 0 and now < cooldown_until:
+        remaining = cooldown_until - now
+        print(f"  → 延长冷却中（{int(remaining)}秒后解除，连续告警已达上限），跳过本次告警")
+        return
+
+    if cooldown_until > 0 and now >= cooldown_until:
+        print(f"  → 延长冷却已过期，重置连续告警计数")
+        state["consecutive_alerts"] = 0
+        state["cooldown_until"] = 0
+
+    # if volume dropped below threshold, reset the streak
     if count < threshold:
-        print(f"  → 未达阈值，无需告警")
+        if state["consecutive_alerts"] > 0:
+            print(f"  → 数据回落至阈值以下，重置连续告警计数（之前: {state['consecutive_alerts']}次）")
+            state["consecutive_alerts"] = 0
+            save_state(state)
+        else:
+            print(f"  → 未达阈值，无需告警")
         return
 
-    cooldown_sec = cfg["monitor"]["cooldown_minutes"] * 60
-    elapsed = now - state["last_alert_time"]
+    # count >= threshold: alert
+    consecutive = state["consecutive_alerts"] + 1
+    print(f"  → 触发告警！（第 {consecutive}/{max_consecutive} 次连续）正在发送 Webhook...")
 
-    if elapsed < cooldown_sec:
-        remaining = cooldown_sec - elapsed
-        print(f"  → 冷却中（{int(remaining)}秒后解除），跳过本次告警")
-        return
-
-    print(f"  → 触发告警！正在发送 Webhook...")
     try:
         send_alert(
             cfg["webhook"]["url"], tag_id, count, threshold,
             cfg["monitor"]["window_minutes"],
+            consecutive=consecutive, max_consecutive=max_consecutive,
         )
         state["last_alert_time"] = now
+        state["consecutive_alerts"] = consecutive
+
+        if consecutive >= max_consecutive:
+            state["cooldown_until"] = now + extended_cooldown_sec
+            cooldown_min = extended_cooldown_sec // 60
+            print(f"  → 已连续告警 {consecutive} 次，进入 {cooldown_min} 分钟延长冷却")
+
         save_state(state)
         print(f"  → 告警已发送")
     except requests.exceptions.RequestException as e:

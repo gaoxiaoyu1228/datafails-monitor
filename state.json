@@ -1,3 +1,5 @@
 {
-  "last_alert_time": 1778112286
+  "last_alert_time": 0,
+  "consecutive_alerts": 0,
+  "cooldown_until": 0
 }
