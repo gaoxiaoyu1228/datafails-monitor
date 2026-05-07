@@ -8,13 +8,16 @@ intercomassesstoken.md
 __pycache__/
 *.pyc
 
-# 非本项目文件（Vercel / Next.js 等）
-.next/
-.vercel/
+# 非本项目文件（Vercel / Next.js 等，仅限根目录）
+/.next/
+/.vercel/
 .env.local
 .env
-app/
-vercel.json
-next.config.ts
-package.json
-tsconfig.json
+/app/
+/vercel.json
+/next.config.ts
+/package.json
+/tsconfig.json
+
+# 允许 vercel-cron 子项目
+!vercel-cron/
