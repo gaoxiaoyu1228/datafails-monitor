@@ -1,0 +1,66 @@
+name: DataFail Monitor
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "运行模式"
+        required: false
+        default: "run"
+        type: choice
+        options:
+          - run
+          - check
+          - mock
+
+permissions:
+  contents: write
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    defaults:
+      run:
+        working-directory: github-actions
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt --quiet
+
+      - name: Run monitor
+        env:
+          INTERCOM_ACCESS_TOKEN: ${{ secrets.INTERCOM_ACCESS_TOKEN }}
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+          MODE: ${{ github.event.inputs.mode || 'run' }}
+        run: |
+          if [ "$MODE" = "check" ]; then
+            python3 monitor.py --check
+          elif [ "$MODE" = "mock" ]; then
+            python3 monitor.py --mock
+          else
+            python3 monitor.py
+          fi
+
+      - name: Commit state (if changed)
+        if: ${{ github.event_name == 'schedule' || github.event.inputs.mode == 'run' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add github-actions/state.json
+          if git diff --staged --quiet; then
+            echo "state unchanged"
+          else
+            git commit -m "chore: update monitor state [skip ci]"
+            git push origin main
+          fi
