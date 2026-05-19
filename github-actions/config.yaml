@@ -4,7 +4,7 @@ intercom:
 monitor:
   tag_id: "11659240"          # DataFail 标签
   window_minutes: 60          # 统计近 N 分钟的会话数
-  threshold: 1                # 触发告警的阈值（测试中，后续改为 10）
+  threshold: 1                # 触发告警的阈值
   max_consecutive_alerts: 3   # 连续告警 N 次后进入延长冷却
   extended_cooldown_minutes: 45  # 延长冷却时长（分钟）
 
